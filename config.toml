@@ -7,10 +7,6 @@ public_key = """
 -----BEGIN PUBLIC KEY-----
 MCowBQYDK2VwAyEAHGCyaM2KW5/S31wd+jHuki2QrQw1pyAFUcz888ekiVA=
 -----END PUBLIC KEY-----"""
-private_key = """
------BEGIN PRIVATE KEY-----
-MC4CAQAwBQYDK2VwBCIEIMJ3D6UBk/inMyoPWNPYybNIA0TEinMrWiMEMvoCodXE
------END PRIVATE KEY-----"""
 
 
 [postgres]
