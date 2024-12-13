@@ -15,7 +15,7 @@
 // Package namehash provides functions to hash ENS names.
 // Minor modifications to error returns have been made to fit the context of this project.
 
-package namehash
+package ens
 
 import (
 	"encoding/hex"
