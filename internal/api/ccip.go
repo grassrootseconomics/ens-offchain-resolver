@@ -1,10 +1,15 @@
 package api
 
 import (
+	"bytes"
+	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	namehash "github.com/grassrootseconomics/resolver/pkg"
 	"github.com/kamikazechaser/common/httputil"
 	"github.com/lmittmann/w3"
 	"github.com/uptrace/bunrouter"
@@ -15,13 +20,14 @@ type CCIPParams struct {
 	Data   string
 }
 
-var (
-	resolveFunc = w3.MustNewFunc("resolve(bytes,bytes)", "")
+const testResolvedAddress = "0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF"
 
-	addrFunc          = w3.MustNewFunc("addr(bytes32)", "")
-	addrMulticoinFunc = w3.MustNewFunc("addr(bytes32,uint256)", "")
-	textFunc          = w3.MustNewFunc("text(bytes32,string)", "")
-	contentHashFunc   = w3.MustNewFunc("contentHash(bytes32)", "")
+var (
+	ErrUnsupportedFunction = errors.New("unsupported function")
+	ErrNameValidation      = errors.New("could not validate encoded name in inner data")
+
+	resolveFunc = w3.MustNewFunc("resolve(bytes,bytes)", "")
+	addrFunc    = w3.MustNewFunc("addr(bytes32)", "address")
 )
 
 func (a *API) ccipHandler(w http.ResponseWriter, req bunrouter.Request) error {
@@ -32,21 +38,44 @@ func (a *API) ccipHandler(w http.ResponseWriter, req bunrouter.Request) error {
 
 	var (
 		encodedName []byte
-		data        []byte
+		innerData   []byte
 	)
 
-	if err := resolveFunc.DecodeArgs(w3.B(r.Data), &encodedName, &data); err != nil {
+	if err := resolveFunc.DecodeArgs(w3.B(r.Data), &encodedName, &innerData); err != nil {
 		return err
 	}
+
+	result, err := decodeInnerData(hexutil.Encode(innerData))
+	if err != nil {
+		return err
+	}
+
+	encodedNameHash, err := namehash.NameHash(decodeENSName(encodedName))
+	if err != nil {
+		return err
+	}
+
+	if !bytes.Equal(encodedNameHash[:], result.Bytes()) {
+		return ErrNameValidation
+	}
+
+	// TODO: Offchain lookup is performed here
+	// test.eth -> 0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF
+	// For now we stub it with a test address
+	encodedResult := w3.A(testResolvedAddress)
+
+	// EIP-191 signature here
 
 	return httputil.JSON(w, http.StatusOK, OKResponse{
 		Ok:          true,
 		Description: "CCIP Data",
 		Result: map[string]any{
-			"decodedName": decodeENSName(encodedName),
-			"nestedData":  hexutil.Encode(data),
-			"sender":      r.Sender,
-			"data":        r.Data,
+			"decodedName":      decodeENSName(encodedName),
+			"nestedData":       hexutil.Encode(innerData),
+			"encodedResulthex": encodedResult.Hex(),
+			"result":           result,
+			"sender":           r.Sender,
+			"data":             r.Data,
 		},
 	})
 }
@@ -76,21 +105,21 @@ func decodeENSName(hexBytes []byte) string {
 	return strings.Join(decodedParts, ".")
 }
 
-func matchSignatureWithFunc(nestedDatHex string) *w3.Func {
-	if len(nestedDatHex) < 8 {
-		return nil
+// For now, we will only support the addr(bytes32) function i.e. Ethereum address only
+func decodeInnerData(nestedDatHex string) (*common.Hash, error) {
+	if len(nestedDatHex) < 10 {
+		return nil, fmt.Errorf("invalid nested data hex")
 	}
 
-	switch nestedDatHex[:8] {
-	case "0x3b3b57de":
-		return addrFunc
-	case "0xf1cb7e06":
-		return addrMulticoinFunc
-	case "0x59d1d43c":
-		return textFunc
-	case "0xbc1c58d1":
-		return contentHashFunc
+	if nestedDatHex[:10] == "0x3b3b57de" {
+		var result common.Hash
+
+		if err := addrFunc.DecodeArgs(w3.B(nestedDatHex), &result); err != nil {
+			return nil, err
+		}
+
+		return &result, nil
 	}
 
-	return nil
+	return nil, ErrUnsupportedFunction
 }
