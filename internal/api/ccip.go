@@ -71,10 +71,10 @@ func (a *API) ccipHandler(w http.ResponseWriter, req bunrouter.Request) error {
 	}
 
 	// TODO: Offchain lookup is performed here
-	// test.eth -> 0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF
+	// test.eth -> 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
 	// For now we stub it with a test address
 
-	signature, err := a.ensProvider.SignPayload(
+	payload, err := a.ensProvider.SignPayload(
 		common.HexToAddress(r.Sender),
 		w3.B(r.Data),
 		w3.A(testResolvedAddress),
@@ -83,17 +83,8 @@ func (a *API) ccipHandler(w http.ResponseWriter, req bunrouter.Request) error {
 		return err
 	}
 
-	return httputil.JSON(w, http.StatusOK, OKResponse{
-		Ok:          true,
-		Description: "CCIP Data",
-		Result: map[string]any{
-			"decodedName": ensName,
-			"nestedData":  hexutil.Encode(innerData),
-			"value":       value,
-			"sender":      r.Sender,
-			"data":        r.Data,
-			"sig":         signature,
-		},
+	return httputil.JSON(w, http.StatusOK, CCIPOKResponse{
+		Data: payload,
 	})
 }
 

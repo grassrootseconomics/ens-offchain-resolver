@@ -17,15 +17,9 @@ type ENS struct {
 	signingKey *ecdsa.PrivateKey
 }
 
-const (
-	magicString = "0x1900"
+const ttl = time.Minute * 5
 
-	ttl = time.Minute * 5
-)
-
-var (
-	eip191Prefix = []byte{0x19, 0x00}
-)
+var eip191Prefix = []byte{0x19, 0x00}
 
 func NewProvider(signingKey *ecdsa.PrivateKey) *ENS {
 	return &ENS{
@@ -34,14 +28,14 @@ func NewProvider(signingKey *ecdsa.PrivateKey) *ENS {
 }
 
 func (e *ENS) SignPayload(sender common.Address, request []byte, result common.Address) (string, error) {
-	payload := encodePayloadX(sender, 1736133384, request, result)
+	payload := encodePayload(sender, expiryTimestamp(), request, result)
 
 	sig, err := crypto.Sign(payload.Bytes(), e.signingKey)
 	if err != nil {
 		return "0x", err
 	}
 
-	resp, err := encodeABIParameters(payload.Bytes(), 1736133384, sig)
+	resp, err := encodeABIParameters(payload.Bytes(), expiryTimestamp(), sig)
 	if err != nil {
 		return "0x", err
 	}
@@ -64,7 +58,7 @@ func encodeABIParameters(data []byte, expires uint64, signature []byte) (string,
 	return hexutil.Encode(packedData), nil
 }
 
-func encodePayloadX(sender common.Address, expires uint64, request []byte, result common.Address) common.Hash {
+func encodePayload(sender common.Address, expires uint64, request []byte, result common.Address) common.Hash {
 	payload := append(eip191Prefix, sender.Bytes()...)
 	payload = append(payload, uint64ToBytes(expires)...)
 	payload = append(payload, crypto.Keccak256Hash(request).Bytes()...)
@@ -74,8 +68,7 @@ func encodePayloadX(sender common.Address, expires uint64, request []byte, resul
 }
 
 func expiryTimestamp() uint64 {
-	// return uint64(time.Now().Add(ttl).Unix())
-	return uint64(1736133384)
+	return uint64(time.Now().Add(ttl).Unix())
 }
 
 func DecodeENSName(hexBytes []byte) string {
