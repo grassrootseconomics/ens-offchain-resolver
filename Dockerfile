@@ -11,7 +11,7 @@ WORKDIR /build
 
 COPY . .
 RUN go mod download
-RUN go build -o ccip-gateway -ldflags="-X main.build=${BUILD} -s -w" cmd/service/*.go
+RUN go build -o ccip-gateway -ldflags="-X main.build=${BUILD} -s -w" cmd/*.go
 
 FROM debian:bookworm-slim
 
