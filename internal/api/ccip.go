@@ -89,8 +89,8 @@ func (a *API) ccipHandler(w http.ResponseWriter, req bunrouter.Request) error {
 	}
 
 	// TODO: Offchain lookup is performed here
-	// test.eth -> 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
-	// For now we stub it with a test address
+	// *.sarafu.eth -> 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
+	// For now we stub it with the above test address
 
 	payload, err := a.ensProvider.SignPayload(
 		common.HexToAddress(r.Sender),
