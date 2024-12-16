@@ -44,6 +44,7 @@ func (a *API) ccipHandler(w http.ResponseWriter, req bunrouter.Request) error {
 		Sender: req.Param("sender"),
 	}
 	r.Data = strings.TrimSuffix(req.Param("data"), ".json")
+	a.logg.Debug("received CCIP request", "sender", r.Sender, "data", r.Data)
 
 	var (
 		encodedName []byte
@@ -55,11 +56,14 @@ func (a *API) ccipHandler(w http.ResponseWriter, req bunrouter.Request) error {
 	}
 
 	ensName := ens.DecodeENSName(encodedName)
+	a.logg.Debug("decoded ENS name", "name", ensName)
+	a.logg.Debug("decoded inner data", "data", hexutil.Encode(innerData))
 
 	value, err := decodeInnerData(hexutil.Encode(innerData))
 	if err != nil {
 		return err
 	}
+	a.logg.Debug("inner data return value", "value", value.Hex())
 
 	encodedNameHash, err := ens.NameHash(ensName)
 	if err != nil {
@@ -67,6 +71,7 @@ func (a *API) ccipHandler(w http.ResponseWriter, req bunrouter.Request) error {
 	}
 
 	if !bytes.Equal(encodedNameHash[:], value.Bytes()) {
+		a.logg.Error("name validation failed", "name", ensName)
 		return ErrNameValidation
 	}
 
@@ -82,6 +87,7 @@ func (a *API) ccipHandler(w http.ResponseWriter, req bunrouter.Request) error {
 	if err != nil {
 		return err
 	}
+	a.logg.Debug("signed payload", "payload", payload)
 
 	return httputil.JSON(w, http.StatusOK, CCIPOKResponse{
 		Data: payload,
