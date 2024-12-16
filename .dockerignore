@@ -1,0 +1,9 @@
+/**
+!/cmd
+!/internal
+!/pkg
+!/migrations
+!/LICENSE
+!/config.toml
+!/go.*
+!/queries.sql
