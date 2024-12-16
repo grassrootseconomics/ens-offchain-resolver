@@ -73,12 +73,11 @@ func (a *API) ccipHandler(w http.ResponseWriter, req bunrouter.Request) error {
 	// TODO: Offchain lookup is performed here
 	// test.eth -> 0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF
 	// For now we stub it with a test address
-	encodedResultBytes := common.LeftPadBytes(w3.A(testResolvedAddress).Bytes(), 32)
 
 	signature, err := a.ensProvider.SignPayload(
 		common.HexToAddress(r.Sender),
 		w3.B(r.Data),
-		encodedResultBytes,
+		w3.A(testResolvedAddress),
 	)
 	if err != nil {
 		return err

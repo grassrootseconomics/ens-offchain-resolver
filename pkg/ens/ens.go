@@ -2,6 +2,7 @@ package ens
 
 import (
 	"crypto/ecdsa"
+	"encoding/binary"
 	"fmt"
 	"strings"
 	"time"
@@ -10,7 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
-	solsha3 "github.com/miguelmota/go-solidity-sha3"
 )
 
 type ENS struct {
@@ -19,7 +19,12 @@ type ENS struct {
 
 const (
 	magicString = "0x1900"
-	ttl         = time.Minute * 5
+
+	ttl = time.Minute * 5
+)
+
+var (
+	eip191Prefix = []byte{0x19, 0x00}
 )
 
 func NewProvider(signingKey *ecdsa.PrivateKey) *ENS {
@@ -28,15 +33,15 @@ func NewProvider(signingKey *ecdsa.PrivateKey) *ENS {
 	}
 }
 
-func (e *ENS) SignPayload(sender common.Address, request []byte, result []byte) (string, error) {
-	payload := encodePayload(sender, request, result)
+func (e *ENS) SignPayload(sender common.Address, request []byte, result common.Address) (string, error) {
+	payload := encodePayloadX(sender, 1736133384, request, result)
 
-	sig, err := crypto.Sign(payload, e.signingKey)
+	sig, err := crypto.Sign(payload.Bytes(), e.signingKey)
 	if err != nil {
 		return "0x", err
 	}
 
-	resp, err := encodeABIParameters(payload, expiryTimestamp(), sig)
+	resp, err := encodeABIParameters(payload.Bytes(), 1736133384, sig)
 	if err != nil {
 		return "0x", err
 	}
@@ -59,15 +64,18 @@ func encodeABIParameters(data []byte, expires uint64, signature []byte) (string,
 	return hexutil.Encode(packedData), nil
 }
 
-func encodePayload(sender common.Address, request []byte, result []byte) []byte {
-	return solsha3.SoliditySHA3(
-		[]string{"bytes", "address", "uint64", "bytes32", "bytes32"},
-		[]interface{}{magicString, sender, expiryTimestamp(), crypto.Keccak256Hash(request).Hex(), crypto.Keccak256Hash(result).Hex()},
-	)
+func encodePayloadX(sender common.Address, expires uint64, request []byte, result common.Address) common.Hash {
+	payload := append(eip191Prefix, sender.Bytes()...)
+	payload = append(payload, uint64ToBytes(expires)...)
+	payload = append(payload, crypto.Keccak256Hash(request).Bytes()...)
+	payload = append(payload, crypto.Keccak256Hash(common.LeftPadBytes(result.Bytes(), 32)).Bytes()...)
+
+	return crypto.Keccak256Hash(payload)
 }
 
 func expiryTimestamp() uint64 {
-	return uint64(time.Now().Add(ttl).Unix())
+	// return uint64(time.Now().Add(ttl).Unix())
+	return uint64(1736133384)
 }
 
 func DecodeENSName(hexBytes []byte) string {
@@ -93,4 +101,10 @@ func DecodeENSName(hexBytes []byte) string {
 	}
 
 	return strings.Join(decodedParts, ".")
+}
+
+func uint64ToBytes(value uint64) []byte {
+	b := make([]byte, 8)
+	binary.BigEndian.PutUint64(b, value)
+	return b
 }
