@@ -17,7 +17,7 @@ type (
 	}
 
 	CCIPErrResponse struct {
-		Data string `json:"message"`
+		Message string `json:"message"`
 	}
 
 	RegisterRequest struct {

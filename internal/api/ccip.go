@@ -52,7 +52,9 @@ func (a *API) ccipHandler(w http.ResponseWriter, req bunrouter.Request) error {
 	)
 
 	if err := resolveFunc.DecodeArgs(w3.B(r.Data), &encodedName, &innerData); err != nil {
-		return err
+		return httputil.JSON(w, http.StatusBadRequest, CCIPErrResponse{
+			Message: "Could not decode data.",
+		})
 	}
 
 	ensName := ens.DecodeENSName(encodedName)
@@ -61,18 +63,29 @@ func (a *API) ccipHandler(w http.ResponseWriter, req bunrouter.Request) error {
 
 	value, err := decodeInnerData(hexutil.Encode(innerData))
 	if err != nil {
-		return err
+		if err == ErrUnsupportedFunction {
+			return httputil.JSON(w, http.StatusBadRequest, CCIPErrResponse{
+				Message: "Unsupported function.",
+			})
+		}
+
+		return httputil.JSON(w, http.StatusBadRequest, CCIPErrResponse{
+			Message: "Bad data.",
+		})
 	}
 	a.logg.Debug("inner data return value", "value", value.Hex())
 
 	encodedNameHash, err := ens.NameHash(ensName)
 	if err != nil {
-		return err
+		return httputil.JSON(w, http.StatusBadRequest, CCIPErrResponse{
+			Message: "Could not determine encoded name hash.",
+		})
 	}
 
 	if !bytes.Equal(encodedNameHash[:], value.Bytes()) {
-		a.logg.Error("name validation failed", "name", ensName)
-		return ErrNameValidation
+		return httputil.JSON(w, http.StatusBadRequest, CCIPErrResponse{
+			Message: "Could not validate name.",
+		})
 	}
 
 	// TODO: Offchain lookup is performed here
@@ -85,7 +98,9 @@ func (a *API) ccipHandler(w http.ResponseWriter, req bunrouter.Request) error {
 		w3.A(testResolvedAddress),
 	)
 	if err != nil {
-		return err
+		return httputil.JSON(w, http.StatusInternalServerError, CCIPErrResponse{
+			Message: "Could not sign payload.",
+		})
 	}
 	a.logg.Debug("signed payload", "payload", payload)
 
