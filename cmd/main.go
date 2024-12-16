@@ -12,8 +12,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/grassrootseconomics/resolver/internal/api"
 	"github.com/grassrootseconomics/resolver/internal/util"
+	"github.com/grassrootseconomics/resolver/pkg/ens"
 	"github.com/knadh/koanf/v2"
 )
 
@@ -46,7 +48,13 @@ func main() {
 
 	publicKey, err := util.LoadSigningKey(ko.MustString("api.public_key"))
 	if err != nil {
-		lo.Error("could not load private key", "error", err)
+		lo.Error("could not load JWT verifying key", "error", err)
+		os.Exit(1)
+	}
+
+	chainSigner, err := crypto.HexToECDSA(ko.MustString("chain.signer_private_key"))
+	if err != nil {
+		lo.Error("could not load chain signer private key", "error", err)
 		os.Exit(1)
 	}
 
@@ -55,6 +63,7 @@ func main() {
 		EnableMetrics: ko.Bool("metrics.enable"),
 		ListenAddress: ko.MustString("api.address"),
 		Logg:          lo,
+		ENSProvider:   ens.NewProvider(chainSigner),
 	})
 
 	wg.Add(1)

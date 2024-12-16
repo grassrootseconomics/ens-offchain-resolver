@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/grassrootseconomics/resolver/pkg/ens"
 	"github.com/kamikazechaser/common/httputil"
 	"github.com/uptrace/bunrouter"
 	"github.com/uptrace/bunrouter/extra/reqlog"
@@ -18,6 +19,7 @@ type (
 		EnableMetrics bool
 		ListenAddress string
 		Logg          *slog.Logger
+		ENSProvider   *ens.ENS
 	}
 
 	API struct {
@@ -26,6 +28,7 @@ type (
 		router       *bunrouter.Router
 		server       *http.Server
 		logg         *slog.Logger
+		ensProvider  *ens.ENS
 	}
 )
 
@@ -40,6 +43,7 @@ func New(o APIOpts) *API {
 			bunrouter.WithNotFoundHandler(notFoundHandler),
 			bunrouter.WithMethodNotAllowedHandler(methodNotAllowedHandler),
 		),
+		ensProvider: o.ENSProvider,
 	}
 
 	if o.EnableMetrics {
