@@ -104,6 +104,7 @@ func (a *API) ccipHandler(w http.ResponseWriter, req bunrouter.Request) error {
 	}
 	a.logg.Debug("signed payload", "payload", payload)
 
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	return httputil.JSON(w, http.StatusOK, CCIPOKResponse{
 		Data: payload,
 	})
