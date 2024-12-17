@@ -28,7 +28,9 @@ func NewProvider(signingKey *ecdsa.PrivateKey) *ENS {
 }
 
 func (e *ENS) SignPayload(sender common.Address, request []byte, result common.Address) (string, error) {
-	payload := encodePayload(sender, expiryTimestamp(), request, result)
+	expires := expiryTimestamp()
+
+	payload := encodePayload(sender, expires, request, result)
 
 	sig, err := crypto.Sign(payload.Bytes(), e.signingKey)
 	if err != nil {
@@ -36,7 +38,7 @@ func (e *ENS) SignPayload(sender common.Address, request []byte, result common.A
 	}
 	sig = sig[:64]
 
-	resp, err := encodeABIParameters(common.LeftPadBytes(result.Bytes(), 32), expiryTimestamp(), sig)
+	resp, err := encodeABIParameters(common.LeftPadBytes(result.Bytes(), 32), expires, sig)
 	if err != nil {
 		return "0x", err
 	}
