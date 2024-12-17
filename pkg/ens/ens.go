@@ -34,6 +34,7 @@ func (e *ENS) SignPayload(sender common.Address, request []byte, result common.A
 	if err != nil {
 		return "0x", err
 	}
+	sig = sig[:64]
 
 	resp, err := encodeABIParameters(common.LeftPadBytes(result.Bytes(), 32), expiryTimestamp(), sig)
 	if err != nil {
