@@ -9,7 +9,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/grassrootseconomics/resolver/pkg/ens"
+	"github.com/grassrootseconomics/ens-offchain-resolver/pkg/ens"
 	"github.com/kamikazechaser/common/httputil"
 	"github.com/lmittmann/w3"
 	"github.com/uptrace/bunrouter"

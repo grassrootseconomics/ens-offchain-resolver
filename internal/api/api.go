@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/grassrootseconomics/resolver/pkg/ens"
+	"github.com/grassrootseconomics/ens-offchain-resolver/pkg/ens"
 	"github.com/kamikazechaser/common/httputil"
 	"github.com/uptrace/bunrouter"
 	"github.com/uptrace/bunrouter/extra/reqlog"

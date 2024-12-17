@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/grassrootseconomics/resolver/internal/api"
-	"github.com/grassrootseconomics/resolver/internal/util"
-	"github.com/grassrootseconomics/resolver/pkg/ens"
+	"github.com/grassrootseconomics/ens-offchain-resolver/internal/api"
+	"github.com/grassrootseconomics/ens-offchain-resolver/internal/util"
+	"github.com/grassrootseconomics/ens-offchain-resolver/pkg/ens"
 	"github.com/knadh/koanf/v2"
 )
 

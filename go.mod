@@ -1,4 +1,4 @@
-module github.com/grassrootseconomics/resolver
+module github.com/grassrootseconomics/ens-offchain-resolver
 
 go 1.23.3
 
