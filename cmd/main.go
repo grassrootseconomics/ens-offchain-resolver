@@ -14,6 +14,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/grassrootseconomics/ens-offchain-resolver/internal/api"
+	"github.com/grassrootseconomics/ens-offchain-resolver/internal/store"
 	"github.com/grassrootseconomics/ens-offchain-resolver/internal/util"
 	"github.com/grassrootseconomics/ens-offchain-resolver/pkg/ens"
 	"github.com/knadh/koanf/v2"
@@ -24,8 +25,9 @@ const defaultGracefulShutdownPeriod = time.Second * 20
 var (
 	build = "dev"
 
-	confFlag    string
-	queriesFlag string
+	confFlag             string
+	migrationsFolderFlag string
+	queriesFlag          string
 
 	lo *slog.Logger
 	ko *koanf.Koanf
@@ -33,6 +35,7 @@ var (
 
 func init() {
 	flag.StringVar(&confFlag, "config", "config.toml", "Config file location")
+	flag.StringVar(&migrationsFolderFlag, "migrations", "migrations/", "Migrations folder location")
 	flag.StringVar(&queriesFlag, "queries", "queries.sql", "Queries file location")
 	flag.Parse()
 
@@ -58,10 +61,22 @@ func main() {
 		os.Exit(1)
 	}
 
+	store, err := store.NewPgStore(store.PgOpts{
+		Logg:                 lo,
+		DSN:                  ko.MustString("postgres.dsn"),
+		MigrationsFolderPath: migrationsFolderFlag,
+		QueriesFolderPath:    queriesFlag,
+	})
+	if err != nil {
+		lo.Error("could not initialize postgres store", "error", err)
+		os.Exit(1)
+	}
+
 	apiServer := api.New(api.APIOpts{
 		VerifyingKey:  publicKey,
 		EnableMetrics: ko.Bool("metrics.enable"),
 		ListenAddress: ko.MustString("api.address"),
+		Store:         store,
 		Logg:          lo,
 		ENSProvider:   ens.NewProvider(chainSigner),
 	})

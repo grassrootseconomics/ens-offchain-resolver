@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/grassrootseconomics/ens-offchain-resolver/internal/store"
 	"github.com/grassrootseconomics/ens-offchain-resolver/pkg/ens"
 	"github.com/kamikazechaser/common/httputil"
 	"github.com/uptrace/bunrouter"
@@ -18,6 +19,7 @@ type (
 		VerifyingKey  crypto.PublicKey
 		EnableMetrics bool
 		ListenAddress string
+		Store         store.Store
 		Logg          *slog.Logger
 		ENSProvider   *ens.ENS
 	}
@@ -25,6 +27,7 @@ type (
 	API struct {
 		validator    httputil.ValidatorProvider
 		verifyingKey crypto.PublicKey
+		store        store.Store
 		router       *bunrouter.Router
 		server       *http.Server
 		logg         *slog.Logger
@@ -39,6 +42,7 @@ func New(o APIOpts) *API {
 		validator:    httputil.NewValidator(""),
 		verifyingKey: o.VerifyingKey,
 		logg:         o.Logg,
+		store:        o.Store,
 		router: bunrouter.New(
 			bunrouter.WithNotFoundHandler(notFoundHandler),
 			bunrouter.WithMethodNotAllowedHandler(methodNotAllowedHandler),
