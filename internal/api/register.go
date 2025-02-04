@@ -111,7 +111,7 @@ func (a *API) autoChoose(ctx context.Context, subdomain string, address string, 
 
 	return httputil.JSON(w, http.StatusServiceUnavailable, ErrResponse{
 		Ok:          false,
-		Description: "Autochoose error",
+		Description: "Autochoose error, try a different hint",
 	})
 }
 
