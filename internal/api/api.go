@@ -59,14 +59,15 @@ func New(o APIOpts) *API {
 			g = g.Use(reqlog.NewMiddleware())
 		}
 
-		g.GET("/:sender/*data", api.ccipHandler)
-		g.GET("/resolve/:name", api.resolveNameHandler)
-		g.GET("/reverse/:address", api.reverseAddressHandler)
-
-		g.WithGroup("/register", func(rG *bunrouter.Group) {
+		g.WithGroup("/bypass", func(rG *bunrouter.Group) {
 			rG = rG.Use(api.authMiddleware)
-			rG.POST("/", api.registerHandler)
+			rG.POST("/register", api.registerHandler)
+			g.GET("/resolve/:name", api.resolveNameHandler)
+			g.GET("/reverse/:address", api.reverseAddressHandler)
+
 		})
+
+		g.GET("/:sender/*data", api.ccipHandler)
 	})
 
 	api.server = &http.Server{

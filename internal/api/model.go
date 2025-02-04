@@ -22,6 +22,6 @@ type (
 
 	RegisterRequest struct {
 		Address string `json:"address" validate:"required,eth_addr_checksum"`
-		Name    string `json:"name" validate:"required,fqdn"`
+		Hint    string `json:"hint" validate:"required,fqdn"`
 	}
 )
