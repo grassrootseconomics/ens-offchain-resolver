@@ -62,10 +62,9 @@ func New(o APIOpts) *API {
 		g.WithGroup("/bypass", func(rG *bunrouter.Group) {
 			rG = rG.Use(api.authMiddleware)
 			rG.POST("/register", api.registerHandler)
+			rG.GET("/resolve", api.resolveHandler)
 		})
 
-		// g.GET("/resolve/:name", api.resolveNameHandler)
-		// g.GET("/reverse/:address", api.reverseAddressHandler)
 		g.GET("/:sender/*data", api.ccipHandler)
 	})
 
