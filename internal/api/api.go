@@ -65,7 +65,7 @@ func New(o APIOpts) *API {
 			rG.GET("/resolve", api.resolveHandler)
 		})
 
-		g.GET("/:sender/*data", api.ccipHandler)
+		// g.GET("/:sender/*data", api.ccipHandler)
 	})
 
 	api.server = &http.Server{
