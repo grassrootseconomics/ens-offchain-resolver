@@ -28,6 +28,7 @@ var (
 	confFlag             string
 	migrationsFolderFlag string
 	queriesFlag          string
+	ccipOnly             bool
 
 	lo *slog.Logger
 	ko *koanf.Koanf
@@ -37,6 +38,7 @@ func init() {
 	flag.StringVar(&confFlag, "config", "config.toml", "Config file location")
 	flag.StringVar(&migrationsFolderFlag, "migrations", "migrations/", "Migrations folder location")
 	flag.StringVar(&queriesFlag, "queries", "queries.sql", "Queries file location")
+	flag.BoolVar(&ccipOnly, "ccip", false, "CCIP read gateway mode only")
 	flag.Parse()
 
 	lo = util.InitLogger()
@@ -73,6 +75,7 @@ func main() {
 	}
 
 	apiServer := api.New(api.APIOpts{
+		CCIPOnly:      ccipOnly,
 		VerifyingKey:  publicKey,
 		EnableMetrics: ko.Bool("metrics.enable"),
 		ListenAddress: ko.MustString("api.address"),
@@ -121,18 +124,3 @@ func main() {
 func notifyShutdown() (context.Context, context.CancelFunc) {
 	return signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 }
-
-// func loadQueries(queriesPath string) (*data.PgQueries, error) {
-// 	// parsedQueries, err := goyesql.ParseFile(queriesPath)
-// 	// if err != nil {
-// 	// 	return nil, err
-// 	// }
-
-// 	// // loadedQueries := &data.PgQueries{}
-
-// 	// if err := goyesql.ScanToStruct(loadedQueries, parsedQueries, nil); err != nil {
-// 	// 	return nil, fmt.Errorf("failed to scan queries %v", err)
-// 	// }
-
-// 	// return loadedQueries, nil
-// }

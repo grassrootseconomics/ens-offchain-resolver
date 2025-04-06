@@ -16,9 +16,10 @@ import (
 
 type (
 	APIOpts struct {
-		VerifyingKey  crypto.PublicKey
+		CCIPOnly      bool
 		EnableMetrics bool
 		ListenAddress string
+		VerifyingKey  crypto.PublicKey
 		Store         store.Store
 		Logg          *slog.Logger
 		ENSProvider   *ens.ENS
@@ -59,13 +60,16 @@ func New(o APIOpts) *API {
 			g = g.Use(reqlog.NewMiddleware())
 		}
 
-		g.WithGroup("/bypass", func(rG *bunrouter.Group) {
-			rG = rG.Use(api.authMiddleware)
-			rG.POST("/register", api.registerHandler)
-			rG.GET("/resolve", api.resolveHandler)
-		})
-
-		// g.GET("/:sender/*data", api.ccipHandler)
+		if o.CCIPOnly {
+			o.Logg.Info("CCIP read gateway mode only")
+			g.GET("/:sender/*data", api.ccipHandler)
+		} else {
+			g.WithGroup("/bypass", func(rG *bunrouter.Group) {
+				rG = rG.Use(api.authMiddleware)
+				rG.POST("/register", api.registerHandler)
+				rG.GET("/resolve", api.resolveHandler)
+			})
+		}
 	})
 
 	api.server = &http.Server{
