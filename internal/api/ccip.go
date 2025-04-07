@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/grassrootseconomics/ens-offchain-resolver/pkg/ens"
+	"github.com/jackc/pgx/v5"
 	"github.com/kamikazechaser/common/httputil"
 	"github.com/lmittmann/w3"
 	"github.com/uptrace/bunrouter"
@@ -89,6 +90,19 @@ func (a *API) ccipHandler(w http.ResponseWriter, req bunrouter.Request) error {
 		})
 	}
 
+	address, err := a.store.LookupName(req.Context(), ensName)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return httputil.JSON(w, http.StatusBadRequest, CCIPErrResponse{
+				Message: "Nmae not resolved in internal DB.",
+			})
+		}
+
+		return httputil.JSON(w, http.StatusBadRequest, CCIPErrResponse{
+			Message: "Internal server error.",
+		})
+	}
+
 	// TODO: Offchain lookup is performed here
 	// *.sarafu.eth -> 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
 	// For now we stub it with the above test address
@@ -96,7 +110,7 @@ func (a *API) ccipHandler(w http.ResponseWriter, req bunrouter.Request) error {
 	payload, err := a.ensProvider.SignPayload(
 		common.HexToAddress(r.Sender),
 		w3.B(r.Data),
-		w3.A(testResolvedAddress),
+		w3.A(address),
 	)
 	if err != nil {
 		return httputil.JSON(w, http.StatusInternalServerError, CCIPErrResponse{
