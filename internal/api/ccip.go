@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"math/big"
 	"net/http"
 	"strings"
 
@@ -24,9 +25,12 @@ type (
 )
 
 const (
+	CELO_COIN = 2147525868
+
 	testResolvedAddress = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
 
-	AddrSignature string = "0x3b3b57de"
+	AddrSignature      string = "0x3b3b57de"
+	MulticoinSignature string = "0xf1cb7e06"
 )
 
 var (
@@ -36,7 +40,8 @@ var (
 	resolveFunc = w3.MustNewFunc("resolve(bytes,bytes)", "")
 
 	signatures = map[string]*w3.Func{
-		AddrSignature: w3.MustNewFunc("addr(bytes32)", "address"),
+		AddrSignature:      w3.MustNewFunc("addr(bytes32)", "address"),
+		MulticoinSignature: w3.MustNewFunc("addr(bytes32,uint256)", "bytes"),
 	}
 )
 
@@ -63,7 +68,7 @@ func (a *API) ccipHandler(w http.ResponseWriter, req bunrouter.Request) error {
 	a.logg.Debug("decoded ENS name", "name", ensName)
 	a.logg.Debug("decoded inner data", "data", hexutil.Encode(innerData))
 
-	value, err := decodeInnerData(hexutil.Encode(innerData))
+	value, err := a.decodeInnerData(hexutil.Encode(innerData))
 	if err != nil {
 		if err == ErrUnsupportedFunction {
 			return httputil.JSON(w, http.StatusBadRequest, CCIPErrResponse{
@@ -94,7 +99,7 @@ func (a *API) ccipHandler(w http.ResponseWriter, req bunrouter.Request) error {
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return httputil.JSON(w, http.StatusBadRequest, CCIPErrResponse{
-				Message: "Nmae not resolved in internal DB.",
+				Message: "Name not resolved in internal DB.",
 			})
 		}
 
@@ -102,10 +107,6 @@ func (a *API) ccipHandler(w http.ResponseWriter, req bunrouter.Request) error {
 			Message: "Internal server error.",
 		})
 	}
-
-	// TODO: Offchain lookup is performed here
-	// *.sarafu.eth -> 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045
-	// For now we stub it with the above test address
 
 	payload, err := a.ensProvider.SignPayload(
 		common.HexToAddress(r.Sender),
@@ -124,8 +125,7 @@ func (a *API) ccipHandler(w http.ResponseWriter, req bunrouter.Request) error {
 	})
 }
 
-// For now, we will only support the addr(bytes32) function i.e. Ethereum address only
-func decodeInnerData(nestedDataHex string) (*common.Hash, error) {
+func (a *API) decodeInnerData(nestedDataHex string) (*common.Hash, error) {
 	if len(nestedDataHex) < 10 {
 		return nil, fmt.Errorf("invalid nested data hex")
 	}
@@ -133,12 +133,24 @@ func decodeInnerData(nestedDataHex string) (*common.Hash, error) {
 	switch nestedDataHex[:10] {
 	case AddrSignature:
 		var result common.Hash
-
 		if err := signatures[AddrSignature].DecodeArgs(w3.B(nestedDataHex), &result); err != nil {
 			return nil, err
 		}
-
 		return &result, nil
+	case MulticoinSignature:
+		var (
+			result   common.Hash
+			coinType *big.Int
+		)
+		if err := signatures[MulticoinSignature].DecodeArgs(w3.B(nestedDataHex), &result, &coinType); err != nil {
+			return nil, err
+		}
+		a.logg.Debug("decoded coin type", "coinType", coinType)
+		if coinType.Cmp(big.NewInt(CELO_COIN)) == 0 {
+			return &result, nil
+		} else {
+			return nil, ErrUnsupportedFunction
+		}
 	}
 
 	return nil, ErrUnsupportedFunction
