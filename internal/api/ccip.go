@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/grassrootseconomics/ens-offchain-resolver/pkg/ens"
@@ -39,6 +40,7 @@ var (
 
 	resolveFunc = w3.MustNewFunc("resolve(bytes,bytes)", "")
 
+	// https://docs.ens.domains/resolvers/interfaces/#resolver-interface-standards/
 	signatures = map[string]*w3.Func{
 		AddrSignature:      w3.MustNewFunc("addr(bytes32)", "address"),
 		MulticoinSignature: w3.MustNewFunc("addr(bytes32,uint256)", "bytes"),
@@ -108,10 +110,12 @@ func (a *API) ccipHandler(w http.ResponseWriter, req bunrouter.Request) error {
 		})
 	}
 
+	resultBytes := a.encodeAddress(hexutil.Encode(innerData), w3.A(address))
+
 	payload, err := a.ensProvider.SignPayload(
 		common.HexToAddress(r.Sender),
 		w3.B(r.Data),
-		w3.A(address),
+		resultBytes,
 	)
 	if err != nil {
 		return httputil.JSON(w, http.StatusInternalServerError, CCIPErrResponse{
@@ -154,4 +158,38 @@ func (a *API) decodeInnerData(nestedDataHex string) (*common.Hash, error) {
 	}
 
 	return nil, ErrUnsupportedFunction
+}
+
+// TODO: Massive refactor needed here
+func (a *API) encodeAddress(nestedDataHex string, addr common.Address) []byte {
+	if len(nestedDataHex) < 10 {
+		return nil
+	}
+
+	switch nestedDataHex[:10] {
+	case AddrSignature:
+		args := abi.Arguments{
+			{Type: abi.Type{T: abi.AddressTy}},
+		}
+
+		packedData, err := args.Pack(addr)
+		if err != nil {
+			panic(err)
+		}
+
+		return packedData
+
+	case MulticoinSignature:
+		args := abi.Arguments{
+			{Type: abi.Type{T: abi.BytesTy}},
+		}
+
+		packedData, err := args.Pack(addr.Bytes())
+		if err != nil {
+			panic(err)
+		}
+
+		return packedData
+	}
+	return nil
 }

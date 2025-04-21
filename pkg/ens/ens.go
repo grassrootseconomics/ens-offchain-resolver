@@ -4,6 +4,7 @@ import (
 	"crypto/ecdsa"
 	"encoding/binary"
 	"fmt"
+	"math/big"
 	"strings"
 	"time"
 
@@ -27,7 +28,7 @@ func NewProvider(signingKey *ecdsa.PrivateKey) *ENS {
 	}
 }
 
-func (e *ENS) SignPayload(sender common.Address, request []byte, result common.Address) (string, error) {
+func (e *ENS) SignPayload(sender common.Address, request []byte, result []byte) (string, error) {
 	expires := expiryTimestamp()
 
 	payload := encodePayload(sender, expires, request, result)
@@ -38,7 +39,13 @@ func (e *ENS) SignPayload(sender common.Address, request []byte, result common.A
 	}
 	sig[64] += 27
 
-	resp, err := encodeABIParameters(common.LeftPadBytes(result.Bytes(), 32), expires, sig)
+	s := new(big.Int).SetBytes(sig[32:64])
+
+	sCopy := new(big.Int).Set(s)
+
+	compactSignature := append(sig[:32], sCopy.Bytes()...)
+
+	resp, err := encodeABIParameters(common.LeftPadBytes(result, 32), expires, compactSignature)
 	if err != nil {
 		return "0x", err
 	}
@@ -61,11 +68,11 @@ func encodeABIParameters(data []byte, expires uint64, signature []byte) (string,
 	return hexutil.Encode(packedData), nil
 }
 
-func encodePayload(sender common.Address, expires uint64, request []byte, result common.Address) common.Hash {
+func encodePayload(sender common.Address, expires uint64, request []byte, result []byte) common.Hash {
 	payload := append(eip191Prefix, sender.Bytes()...)
 	payload = append(payload, uint64ToBytes(expires)...)
 	payload = append(payload, crypto.Keccak256Hash(request).Bytes()...)
-	payload = append(payload, crypto.Keccak256Hash(common.LeftPadBytes(result.Bytes(), 32)).Bytes()...)
+	payload = append(payload, crypto.Keccak256Hash(result).Bytes()...)
 
 	return crypto.Keccak256Hash(payload)
 }
