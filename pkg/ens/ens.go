@@ -4,7 +4,6 @@ import (
 	"crypto/ecdsa"
 	"encoding/binary"
 	"fmt"
-	"math/big"
 	"strings"
 	"time"
 
@@ -39,13 +38,7 @@ func (e *ENS) SignPayload(sender common.Address, request []byte, result []byte) 
 	}
 	sig[64] += 27
 
-	s := new(big.Int).SetBytes(sig[32:64])
-
-	sCopy := new(big.Int).Set(s)
-
-	compactSignature := append(sig[:32], sCopy.Bytes()...)
-
-	resp, err := encodeABIParameters(common.LeftPadBytes(result, 32), expires, compactSignature)
+	resp, err := encodeABIParameters(common.LeftPadBytes(result, 32), expires, sig)
 	if err != nil {
 		return "0x", err
 	}
