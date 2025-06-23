@@ -28,7 +28,6 @@ var (
 	confFlag             string
 	migrationsFolderFlag string
 	queriesFlag          string
-	ccipOnly             bool
 
 	lo *slog.Logger
 	ko *koanf.Koanf
@@ -38,13 +37,12 @@ func init() {
 	flag.StringVar(&confFlag, "config", "config.toml", "Config file location")
 	flag.StringVar(&migrationsFolderFlag, "migrations", "migrations/", "Migrations folder location")
 	flag.StringVar(&queriesFlag, "queries", "queries.sql", "Queries file location")
-	flag.BoolVar(&ccipOnly, "ccip", false, "CCIP read gateway mode only")
 	flag.Parse()
 
 	lo = util.InitLogger()
 	ko = util.InitConfig(lo, confFlag)
 
-	lo.Info("starting resolver service", "build", build)
+	lo.Info("starting resolver gateway service", "build", build)
 }
 
 func main() {
@@ -74,14 +72,20 @@ func main() {
 		os.Exit(1)
 	}
 
+	ensProvider, err := ens.NewProvider(chainSigner, ko.MustString("chain.eth_rpc_url"))
+	if err != nil {
+		lo.Error("could not initialize ENS provider", "error", err)
+		os.Exit(1)
+	}
+
 	apiServer := api.New(api.APIOpts{
-		CCIPOnly:      ccipOnly,
+		CCIPOnly:      true, // Always true for gateway mode
 		VerifyingKey:  publicKey,
 		EnableMetrics: ko.Bool("metrics.enable"),
 		ListenAddress: ko.MustString("api.address"),
 		Store:         store,
 		Logg:          lo,
-		ENSProvider:   ens.NewProvider(chainSigner),
+		ENSProvider:   ensProvider,
 	})
 
 	wg.Add(1)

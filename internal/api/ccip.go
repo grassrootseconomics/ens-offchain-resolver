@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/grassrootseconomics/ens-offchain-resolver/pkg/ens"
+	goens "github.com/grassrootseconomics/go-ens/v3"
 	"github.com/jackc/pgx/v5"
 	"github.com/kamikazechaser/common/httputil"
 	"github.com/lmittmann/w3"
@@ -84,7 +85,7 @@ func (a *API) ccipHandler(w http.ResponseWriter, req bunrouter.Request) error {
 	}
 	a.logg.Debug("inner data return value", "value", value.Hex())
 
-	encodedNameHash, err := ens.NameHash(ensName)
+	encodedNameHash, err := goens.NameHash(ensName)
 	if err != nil {
 		return httputil.JSON(w, http.StatusBadRequest, CCIPErrResponse{
 			Message: "Could not determine encoded name hash.",

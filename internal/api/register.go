@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand/v2"
 	"net/http"
 	"regexp"
 	"strings"
@@ -12,16 +13,11 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/kamikazechaser/common/httputil"
 	"github.com/uptrace/bunrouter"
-	"golang.org/x/exp/rand"
 )
 
-const (
-	domainSuffix = ".sarafu.eth"
-)
+const domainSuffix = ".sarafu.eth"
 
-var (
-	validSubdomain = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9]*$`)
-)
+var validSubdomain = regexp.MustCompile(`^[a-z][a-z0-9]*$`)
 
 func (a *API) registerHandler(w http.ResponseWriter, req bunrouter.Request) error {
 	var registerReq RegisterRequest
@@ -42,10 +38,12 @@ func (a *API) registerHandler(w http.ResponseWriter, req bunrouter.Request) erro
 		})
 	}
 
-	_, err = a.store.LookupName(req.Context(), registerReq.Hint)
+	normalizedHint := subdomain + domainSuffix
+
+	_, err = a.store.LookupName(req.Context(), normalizedHint)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			if err := a.store.RegisterName(req.Context(), registerReq.Hint, registerReq.Address); err != nil {
+			if err := a.store.RegisterName(req.Context(), normalizedHint, registerReq.Address); err != nil {
 				a.logg.Error("register failed", "error", err)
 				return httputil.JSON(w, http.StatusInternalServerError, ErrResponse{
 					Ok:          false,
@@ -58,7 +56,7 @@ func (a *API) registerHandler(w http.ResponseWriter, req bunrouter.Request) erro
 				Description: "Name registered",
 				Result: map[string]any{
 					"address":    registerReq.Address,
-					"name":       registerReq.Hint,
+					"name":       normalizedHint,
 					"autoChoose": false,
 				},
 			})
@@ -78,7 +76,7 @@ func (a *API) autoChoose(ctx context.Context, subdomain string, address string, 
 	// Max of 90 iterations to find the first available alias + suffix
 	for i := 0; i < 90; i++ {
 		a.logg.Debug("autochoose iteration", "iteration", i, "subdomain", subdomain)
-		num := rand.Intn(90) + 10
+		num := rand.IntN(90) + 10
 		randName := fmt.Sprintf("%s%d", subdomain, num)
 		_, err := a.store.LookupName(ctx, randName)
 		if err != nil {
@@ -116,14 +114,17 @@ func (a *API) autoChoose(ctx context.Context, subdomain string, address string, 
 }
 
 func extractSubdomain(hint string) (string, error) {
+	hint = strings.TrimSuffix(hint, domainSuffix)
+
 	parts := strings.Split(hint, ".")
-	if len(parts) > 3 {
+	if len(parts) > 1 {
 		return "", fmt.Errorf("invalid ENS name")
 	}
-	if !isValidSubdomain(parts[0]) {
+	subdomain := strings.ToLower(parts[0])
+	if !isValidSubdomain(subdomain) {
 		return "", fmt.Errorf("invalid subdomain format: only letters and numbers are allowed")
 	}
-	return parts[0], nil
+	return subdomain, nil
 }
 
 func isValidSubdomain(subdomain string) bool {

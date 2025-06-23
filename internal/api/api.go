@@ -19,6 +19,7 @@ type (
 		CCIPOnly      bool
 		EnableMetrics bool
 		ListenAddress string
+		ETHRPCURL     string
 		VerifyingKey  crypto.PublicKey
 		Store         store.Store
 		Logg          *slog.Logger
@@ -64,10 +65,14 @@ func New(o APIOpts) *API {
 			o.Logg.Info("CCIP read gateway mode only")
 			g.GET("/:sender/*data", api.ccipHandler)
 		} else {
-			g.WithGroup("/bypass", func(rG *bunrouter.Group) {
+			g.WithGroup("/resolve", func(rG *bunrouter.Group) {
+				rG.GET("/:name", api.resolveHandler)
+				rG.GET("/reverse/:address", api.reverseResolveHandler)
+			})
+
+			g.WithGroup("/internal", func(rG *bunrouter.Group) {
 				rG = rG.Use(api.authMiddleware)
 				rG.POST("/register", api.registerHandler)
-				rG.GET("/resolve", api.resolveHandler)
 			})
 		}
 	})

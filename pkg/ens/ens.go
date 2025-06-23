@@ -11,20 +11,37 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
+	goens "github.com/grassrootseconomics/go-ens/v3"
 )
 
 type ENS struct {
 	signingKey *ecdsa.PrivateKey
+	ethClient  *ethclient.Client
 }
 
 const ttl = time.Minute * 5
 
 var eip191Prefix = []byte{0x19, 0x00}
 
-func NewProvider(signingKey *ecdsa.PrivateKey) *ENS {
+func NewProvider(signingKey *ecdsa.PrivateKey, ethRPCURL string) (*ENS, error) {
+	ethClient, err := ethclient.Dial(ethRPCURL)
+	if err != nil {
+		return nil, err
+	}
+
 	return &ENS{
 		signingKey: signingKey,
+		ethClient:  ethClient,
+	}, nil
+}
+
+func (e *ENS) ResolveName(name string) (common.Address, error) {
+	if name == "" {
+		return common.Address{}, fmt.Errorf("name cannot be empty")
 	}
+
+	return goens.Resolve(e.ethClient, name)
 }
 
 func (e *ENS) SignPayload(sender common.Address, request []byte, result []byte) (string, error) {

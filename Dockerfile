@@ -1,4 +1,4 @@
-FROM golang:1.23.3-bookworm as build
+FROM golang:1.24-bookworm as build
 
 ENV CGO_ENABLED=0
 
@@ -11,7 +11,8 @@ WORKDIR /build
 
 COPY . .
 RUN go mod download
-RUN go build -o ccip-gateway -ldflags="-X main.build=${BUILD} -s -w" cmd/*.go
+RUN go build -o resolver-gateway -ldflags="-X main.build=${BUILD} -s -w" cmd/gateway/main.go
+RUN go build -o resolver-full -ldflags="-X main.build=${BUILD} -s -w" cmd/full/main.go
 
 FROM debian:bookworm-slim
 
@@ -28,4 +29,4 @@ COPY LICENSE .
 
 EXPOSE 5015
 
-CMD ["./ccip-gateway"]
+CMD ["./resolver-full"]

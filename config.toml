@@ -13,4 +13,6 @@ MCowBQYDK2VwAyEAHGCyaM2KW5/S31wd+jHuki2QrQw1pyAFUcz888ekiVA=
 dsn = "postgres://postgres:postgres@127.0.0.1:5432/ge_alias"
 
 [chain]
+eth_rpc_url = "https://ethereum-rpc.publicnode.com"
+# Pass your own private key here to sign transactions
 signer_private_key = ""
