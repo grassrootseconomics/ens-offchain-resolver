@@ -84,8 +84,8 @@ func (pg *Pg) UpdateName(ctx context.Context, primaryName string, blockchainAddr
 	_, err := pg.db.Exec(
 		ctx,
 		pg.queries.UpdateName,
-		blockchainAddress,
 		primaryName,
+		blockchainAddress,
 	)
 	if err != nil {
 		return err
