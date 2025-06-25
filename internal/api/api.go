@@ -73,6 +73,8 @@ func New(o APIOpts) *API {
 			g.WithGroup("/internal", func(rG *bunrouter.Group) {
 				rG = rG.Use(api.authMiddleware)
 				rG.POST("/register", api.registerHandler)
+				rG.PUT("/update", api.updateHandler)
+
 			})
 		}
 	})

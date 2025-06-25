@@ -24,4 +24,9 @@ type (
 		Address string `json:"address" validate:"required,eth_addr_checksum"`
 		Hint    string `json:"hint" validate:"required,fqdn"`
 	}
+
+	UpdateRequest struct {
+		Name    string `json:"name" validate:"required,fqdn"`
+		Address string `json:"address" validate:"required,eth_addr_checksum"`
+	}
 )

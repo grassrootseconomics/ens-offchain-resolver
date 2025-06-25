@@ -113,6 +113,45 @@ func (a *API) autoChoose(ctx context.Context, subdomain string, address string, 
 	})
 }
 
+func (a *API) updateHandler(w http.ResponseWriter, req bunrouter.Request) error {
+	var updateReq UpdateRequest
+
+	if err := a.validator.BindJSONAndValidate(w, req.Request, &updateReq); err != nil {
+		a.logg.Error("validation failed", "error", err)
+		return httputil.JSON(w, http.StatusBadRequest, ErrResponse{
+			Ok:          false,
+			Description: "Validation failed",
+		})
+	}
+
+	subdomain, err := extractSubdomain(updateReq.Name)
+	if err != nil {
+		return httputil.JSON(w, http.StatusBadRequest, ErrResponse{
+			Ok:          false,
+			Description: err.Error(),
+		})
+	}
+
+	normalizedName := subdomain + domainSuffix
+
+	if err := a.store.UpdateName(req.Context(), normalizedName, updateReq.Address); err != nil {
+		a.logg.Error("update failed", "error", err)
+		return httputil.JSON(w, http.StatusInternalServerError, ErrResponse{
+			Ok:          false,
+			Description: "Internal server error",
+		})
+	}
+
+	return httputil.JSON(w, http.StatusOK, OKResponse{
+		Ok:          true,
+		Description: "Name updated successfully",
+		Result: map[string]any{
+			"name":    normalizedName,
+			"address": updateReq.Address,
+		},
+	})
+}
+
 func extractSubdomain(hint string) (string, error) {
 	hint = strings.TrimSuffix(hint, domainSuffix)
 
