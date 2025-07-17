@@ -74,6 +74,7 @@ func New(o APIOpts) *API {
 				rG = rG.Use(api.authMiddleware)
 				rG.POST("/register", api.registerHandler)
 				rG.PUT("/update", api.updateHandler)
+				rG.POST("/upsert", api.upsertHandler)
 
 			})
 		}

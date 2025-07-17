@@ -152,6 +152,45 @@ func (a *API) updateHandler(w http.ResponseWriter, req bunrouter.Request) error 
 	})
 }
 
+func (a *API) upsertHandler(w http.ResponseWriter, req bunrouter.Request) error {
+	var upsertReq UpsertRequest
+
+	if err := a.validator.BindJSONAndValidate(w, req.Request, &upsertReq); err != nil {
+		a.logg.Error("validation failed", "error", err)
+		return httputil.JSON(w, http.StatusBadRequest, ErrResponse{
+			Ok:          false,
+			Description: "Validation failed",
+		})
+	}
+
+	subdomain, err := extractSubdomain(upsertReq.Name)
+	if err != nil {
+		return httputil.JSON(w, http.StatusBadRequest, ErrResponse{
+			Ok:          false,
+			Description: err.Error(),
+		})
+	}
+
+	normalizedName := subdomain + domainSuffix
+
+	if err := a.store.UpsertName(req.Context(), normalizedName, upsertReq.Address); err != nil {
+		a.logg.Error("upsert failed", "error", err)
+		return httputil.JSON(w, http.StatusInternalServerError, ErrResponse{
+			Ok:          false,
+			Description: "Internal server error",
+		})
+	}
+
+	return httputil.JSON(w, http.StatusOK, OKResponse{
+		Ok:          true,
+		Description: "Name updated successfully",
+		Result: map[string]any{
+			"name":    normalizedName,
+			"address": upsertReq.Address,
+		},
+	})
+}
+
 func extractSubdomain(hint string) (string, error) {
 	hint = strings.TrimSuffix(hint, domainSuffix)
 

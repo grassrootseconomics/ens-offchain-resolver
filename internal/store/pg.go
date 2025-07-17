@@ -29,6 +29,7 @@ type (
 	queries struct {
 		RegisterName  string `query:"register-name"`
 		UpdateName    string `query:"update-name"`
+		UpsertName    string `query:"upsert-name"`
 		LookupName    string `query:"lookup-name"`
 		ReverseLookup string `query:"reverse-lookup"`
 	}
@@ -84,6 +85,20 @@ func (pg *Pg) UpdateName(ctx context.Context, primaryName string, blockchainAddr
 	_, err := pg.db.Exec(
 		ctx,
 		pg.queries.UpdateName,
+		primaryName,
+		blockchainAddress,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (pg *Pg) UpsertName(ctx context.Context, primaryName string, blockchainAddress string) error {
+	_, err := pg.db.Exec(
+		ctx,
+		pg.queries.UpsertName,
 		primaryName,
 		blockchainAddress,
 	)

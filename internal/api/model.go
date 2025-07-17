@@ -29,4 +29,9 @@ type (
 		Name    string `json:"name" validate:"required,fqdn"`
 		Address string `json:"address" validate:"required,eth_addr_checksum"`
 	}
+
+	UpsertRequest struct {
+		Name    string `json:"name" validate:"required,fqdn"`
+		Address string `json:"address" validate:"required,eth_addr_checksum"`
+	}
 )
