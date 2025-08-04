@@ -17,7 +17,7 @@ import (
 
 const domainSuffix = ".sarafu.eth"
 
-var validSubdomain = regexp.MustCompile(`^[a-z][a-z0-9]*$`)
+var validSubdomain = regexp.MustCompile(`^[a-z][a-z0-9-]*[a-z0-9]$|^[a-z]$`)
 
 func (a *API) registerHandler(w http.ResponseWriter, req bunrouter.Request) error {
 	var registerReq RegisterRequest
