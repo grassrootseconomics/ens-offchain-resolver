@@ -41,6 +41,13 @@ func (a *API) authMiddleware(next bunrouter.HandlerFunc) bunrouter.HandlerFunc {
 			}
 
 			if claims, ok := token.Claims.(JWTCustomClaims); ok {
+				if claims.Subject == "sarafu-network" {
+					return httputil.JSON(w, http.StatusUnauthorized, ErrResponse{
+						Ok:          false,
+						Description: "Token has been revoked",
+					})
+				}
+
 				if !claims.Service {
 					return httputil.JSON(w, http.StatusUnauthorized, ErrResponse{
 						Ok:          false,
