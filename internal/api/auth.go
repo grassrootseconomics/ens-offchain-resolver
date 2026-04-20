@@ -41,7 +41,7 @@ func (a *API) authMiddleware(next bunrouter.HandlerFunc) bunrouter.HandlerFunc {
 			}
 
 			if claims, ok := token.Claims.(JWTCustomClaims); ok {
-				if claims.Subject == "sarafu-network" {
+				if claims.Subject == "sarafu-network" || claims.Subject == "sn-prod" || claims.Subject == "ussd-prod" {
 					return httputil.JSON(w, http.StatusUnauthorized, ErrResponse{
 						Ok:          false,
 						Description: "Token has been revoked",
