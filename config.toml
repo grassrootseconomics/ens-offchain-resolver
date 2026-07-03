@@ -3,6 +3,7 @@ metrics = true
 
 [api]
 address = ":5015"
+cors = []
 public_key = """
 -----BEGIN PUBLIC KEY-----
 MCowBQYDK2VwAyEAHGCyaM2KW5/S31wd+jHuki2QrQw1pyAFUcz888ekiVA=

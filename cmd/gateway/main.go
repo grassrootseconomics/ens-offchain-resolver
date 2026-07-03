@@ -86,6 +86,7 @@ func main() {
 		Store:         store,
 		Logg:          lo,
 		ENSProvider:   ensProvider,
+		CORS:          ko.Strings("api.cors"),
 	})
 
 	wg.Add(1)

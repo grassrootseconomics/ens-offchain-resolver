@@ -41,9 +41,12 @@ func InitConfig(lo *slog.Logger, confFilePath string) *koanf.Koanf {
 		os.Exit(1)
 	}
 
-	if err := ko.Load(env.Provider("RESOLVER_", ".", func(s string) string {
-		return strings.ReplaceAll(strings.ToLower(
-			strings.TrimPrefix(s, "RESOLVER_")), "__", ".")
+	if err := ko.Load(env.ProviderWithValue("RESOLVER_", ".", func(s string, v string) (string, interface{}) {
+		key := strings.ReplaceAll(strings.ToLower(strings.TrimPrefix(s, "RESOLVER_")), "__", ".")
+		if key == "api.cors" {
+			return key, strings.Fields(v)
+		}
+		return key, v
 	}), nil); err != nil {
 		lo.Error("could not override config from env vars", "error", err)
 		os.Exit(1)
